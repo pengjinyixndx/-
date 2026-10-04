@@ -1,0 +1,23 @@
+#!/bin/sh
+# 提交后自动推送，避免“改完忘了推”。
+#
+# 分支没有上游时（新分支、或 remote 还没配）不会硬推，
+# 只打印提示，避免把东西推到你没预期的分支上。
+branch=$(git symbolic-ref --short -q HEAD) || exit 0
+upstream=$(git rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null)
+
+if [ -z "$upstream" ]; then
+  echo ""
+  echo "post-commit: 分支 '$branch' 还没有上游，已跳过自动推送。"
+  echo "             要推送请执行： git push -u origin $branch"
+  exit 0
+fi
+
+echo ""
+echo "post-commit: 自动推送到 $upstream ..."
+if git push --quiet; then
+  echo "post-commit: 已推送 ✓"
+else
+  echo "post-commit: 推送失败（网络 / 认证 / 冲突），改动仍已提交在本地。"
+  echo "             重试： git push"
+fi
