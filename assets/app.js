@@ -29,20 +29,23 @@ const KEY = "heartbeat-duo.v1";
 const DEFAULTS = {
   names: [],
   intensity: "mild",
-  unlocked: ["mild", "spicy"],
-  points: 40,
-  custom: { mild: [], spicy: [], fierce: [], extreme: [] },
+  custom: { mild: [], spicy: [], fierce: [], burning: [], edge: [], extreme: [], forbidden: [] },
   sound: true,
   adultAck: false,
   stats: { wins: 0, best: null, rounds: 0 }
 };
 let S = load();
 
+/* 只保留 DEFAULTS 里声明过的键：旧存档里的 points / unlocked 等
+   废弃字段会被丢弃，而不是继续留在状态与 localStorage 里。 */
+const SCHEMA_KEYS = Object.keys(DEFAULTS);
+
 function load() {
   try {
     const raw = JSON.parse(localStorage.getItem(KEY) || "null");
     if (!raw || typeof raw !== "object") return clone(DEFAULTS);
-    const s = Object.assign(clone(DEFAULTS), raw);
+    const s = clone(DEFAULTS);
+    SCHEMA_KEYS.forEach(k => { if (raw[k] !== undefined) s[k] = raw[k]; });
     s.custom = Object.assign(clone(DEFAULTS.custom), raw.custom || {});
     s.stats = Object.assign(clone(DEFAULTS.stats), raw.stats || {});
     return s;
@@ -53,13 +56,13 @@ function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e
 /* ───────────────────────── tiers ─────────────────────────
    七档递进：破冰 → 脸红 → 大幅动作 → 加强力度 → 隔衣敏感 → 脱衣触碰 → 18+  */
 const TIERS = [
-  { id: "mild",    name: "温和", latin: "MILD",    cost: 0,   adult: false, desc: "破冰。零身体接触，只会让你笑和松下来。" },
-  { id: "spicy",   name: "热辣", latin: "SPICY",   cost: 0,   adult: false, desc: "脸红 + 交心一次到位：偏好、坦白、猜心事。" },
-  { id: "fierce",  name: "猛烈", latin: "FIERCE",  cost: 60,  adult: false, desc: "大幅肢体动作：拉、抱、按、压、跨坐。衣物开始离开。" },
-  { id: "burning", name: "灼热", latin: "BURNING", cost: 120, adult: false, desc: "力度与压制拉满，贴身摩擦。仍不碰敏感部位。" },
-  { id: "edge",    name: "临界", latin: "EDGE",    cost: 200, adult: false, desc: "隔着衣物接触胸、大腿内侧、臀。还不脱。" },
-  { id: "extreme", name: "极限", latin: "EXTREME", cost: 300, adult: false, desc: "衣物离开，直接触碰，全身接触。" },
-  { id: "forbidden", name: "禁区", latin: "18+",   cost: 0,   adult: true,  desc: "18+。只想玩到这里的两个人再进来。" }
+  { id: "mild",    name: "温和", latin: "MILD",    adult: false, desc: "破冰。零身体接触，只会让你笑和松下来。" },
+  { id: "spicy",   name: "热辣", latin: "SPICY",   adult: false, desc: "脸红 + 交心一次到位：偏好、坦白、猜心事。" },
+  { id: "fierce",  name: "猛烈", latin: "FIERCE",  adult: false, desc: "大幅肢体动作：拉、抱、按、压、跨坐。衣物开始离开。" },
+  { id: "burning", name: "灼热", latin: "BURNING", adult: false, desc: "力度与压制拉满，贴身摩擦。仍不碰敏感部位。" },
+  { id: "edge",    name: "临界", latin: "EDGE",    adult: false, desc: "隔着衣物接触胸、大腿内侧、臀。还不脱。" },
+  { id: "extreme", name: "极限", latin: "EXTREME", adult: false, desc: "衣物离开，直接触碰，全身接触。" },
+  { id: "forbidden", name: "禁区", latin: "18+",   adult: true,  desc: "18+。只想玩到这里的两个人再进来。" }
 ];
 const tierOf = id => TIERS.find(t => t.id === id) || TIERS[0];
 
@@ -285,30 +288,22 @@ function renderNames() {
 }
 
 /* ───────────────────────── modes / unlock ───────────────────────── */
-const isUnlocked = id => S.unlocked.indexOf(id) >= 0;
-
+/* 所有档位默认可用：唯一的门槛是 18+ 档的成年确认 */
 function renderModes() {
   $("#intensityList").innerHTML = TIERS.map(t => {
-    /* 一个档位只有在「要花心跳值」或「还没确认成年」时才算被挡住 */
-    const needsPoints = !isUnlocked(t.id) && t.cost > 0;
     const needsAge = t.adult && !S.adultAck;
-    const locked = needsPoints || needsAge;
     const on = S.intensity === t.id;
-    const desc = needsPoints ? "用 " + t.cost + " 心跳值解锁 · " + t.desc
-               : needsAge ? "18+ · 首次进入需确认双方成年 · " + t.desc
-               : t.desc;
-    const state = on ? "使用中" : needsPoints ? t.cost + " ♥" : needsAge ? "18+" : "";
-    return '<button class="mode ' + (on ? "is-on " : "") + (locked ? "is-locked" : "") + '" data-tier="' + t.id + '">'
+    const desc = needsAge ? "18+ · 首次进入需确认双方成年 · " + t.desc : t.desc;
+    const state = on ? "使用中" : needsAge ? "18+" : "";
+    return '<button class="mode ' + (on ? "is-on " : "") + (needsAge ? "is-locked" : "") + '" data-tier="' + t.id + '">'
       + '<span class="mode__heart"><svg viewBox="0 0 32 32">' + HEARTS[t.id] + "</svg></span>"
       + '<span class="mode__body"><span class="mode__name">' + t.name + (t.adult ? '<b class="adult-badge">18+</b>' : "") + "</span>"
       + '<span class="mode__desc">' + desc + "</span></span>"
       + '<span class="mode__state">' + state + "</span>"
       + "</button>";
   }).join("");
-  $("#pointsHint").textContent = "心跳值 " + S.points + " ♥ · 抽卡 +2 · 红绿灯获胜 +8 / +16";
   renderNames();
 }
-function addPoints(n) { S.points += n; save(); renderModes(); syncChrome(); }
 /* ───────────────────────── in-app confirm ─────────────────────────
    window.confirm 在内嵌 WebView（微信等）里不可靠、还可能被静默拦截，
    返回 false 时点击会“毫无反应”。所有需要确认的流程都走这个自绘弹窗。   */
@@ -340,10 +335,6 @@ function closeAsk(v) {
 function selectTier(id) {
   const t = tierOf(id);
   const proceed = () => {
-    if (!isUnlocked(id)) {
-      if (S.points >= t.cost) { S.points -= t.cost; S.unlocked.push(id); toast("已解锁 · " + t.name + "模式"); Sound.chord(); }
-      else { toast("还差 " + (t.cost - S.points) + " 心跳值（抽卡 +2）"); Sound.buzz(); return; }
-    }
     S.intensity = id; save();
     renderModes(); renderDrawer(); syncChrome();
     if (current === "truth") prepareTruth();
@@ -374,12 +365,11 @@ function renderDrawer() {
   renderNames();
   $("#drawerBody").innerHTML = '<div class="dgroup"><div class="dgroup__h">真心话大冒险</div>'
     + TIERS.map(it => {
-      const locked = !isUnlocked(it.id), on = S.intensity === it.id;
+      const on = S.intensity === it.id;
       return '<button class="dmode ' + (on ? "is-on" : "") + '" data-tier="' + it.id + '">'
         + '<span class="dmode__heart"><svg viewBox="0 0 32 32">' + HEARTS[it.id] + "</svg></span>"
         + '<span class="dmode__name">' + it.name + (it.adult ? '<b class="adult-badge adult-badge--drawer">18+</b>' : "") + "</span>"
-        + (locked ? '<span class="dmode__lock">' + it.cost + " ♥ 解锁</span>"
-                  : on ? '<span class="dmode__lock">使用中</span>' : "")
+        + (on ? '<span class="dmode__lock">使用中</span>' : "")
         + "</button>";
     }).join("") + "</div>";
 }
@@ -412,7 +402,7 @@ function prepareTruth() {
   if (deck.key !== deckKey() || !deck.queue.length) { deck.key = deckKey(); deck.queue = buildDeck(); deck.index = 0; }
   renderCard(deck.queue[deck.index % deck.queue.length]);
   $("#truthModeName").textContent = tierOf(S.intensity).name;
-  $("#deckInfo").textContent = "牌堆 " + deck.queue.length + " 张 · 抽卡 +2 心跳值 · 自定义题已并入";
+  $("#deckInfo").textContent = "牌堆 " + deck.queue.length + " 张 · 自定义题已并入";
 }
 function whoIsNext() {
   if (!S.names.length) return "轮到谁？";
@@ -442,8 +432,7 @@ function drawNext(who) {
     Sound.beat();
     FX.burst(22);
   }, 200);
-  addPoints(2);
-  $("#deckInfo").textContent = "牌堆 " + deck.queue.length + " 张 · 已抽 " + deck.index + " 张 · 抽卡 +2 心跳值";
+  $("#deckInfo").textContent = "牌堆 " + deck.queue.length + " 张 · 已抽 " + deck.index + " 张";
 }
 /* 真心话 / 大冒险 chosen → walk the deck to that kind, then draw it */
 function pickKind(want) {
@@ -617,7 +606,6 @@ function settleTraffic(won, ms) {
   if (won) {
     S.stats.wins++;
     if (ms != null && (S.stats.best == null || ms < S.stats.best)) S.stats.best = ms;
-    addPoints(traffic.tier === "senior" ? 16 : 8);
   }
   save(); renderTrafficStats();
 }
@@ -647,7 +635,7 @@ function tapTraffic() {
       trafficSet("green", "过了！" + ms + "ms");
       $("#tapLabel").textContent = "再来一次";
       Sound.chord(); FX.excite(1.3); FX.burst(34);
-      toast(ms + "ms · 心跳值 +" + (traffic.tier === "senior" ? 16 : 8));
+      toast(ms + "ms · 过了");
       settleTraffic(true, ms);
     } else {
       trafficSet("yellow", "慢了 " + (ms - win) + "ms");
@@ -779,7 +767,11 @@ syncChrome();
 window.__heartbeat = {
   get state() { return S; },
   go: v => { routeHistory.length = 0; show(v); },
-  set: patch => { Object.assign(S, patch); save(); renderModes(); renderNames(); syncChrome(); },
+  /* set() 也走 schema 白名单，避免写入已废弃的键（如 points） */
+  set: patch => {
+    Object.keys(patch).forEach(k => { if (SCHEMA_KEYS.indexOf(k) >= 0) S[k] = patch[k]; });
+    save(); renderModes(); renderNames(); syncChrome();
+  },
   pick: pickKind,
   spin: spinWheel, roll: rollDice, tap: tapTraffic,
   reset() { try { localStorage.removeItem(KEY); } catch (e) {} S = clone(DEFAULTS); location.reload(); }

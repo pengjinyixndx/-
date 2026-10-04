@@ -202,6 +202,7 @@ parseInto(html, root);
 
 /* ── window/document shim ── */
 const store = new Map();
+store.set("heartbeat-duo.v1", JSON.stringify({ names: ["旧","存档"], intensity: "edge", points: 999, unlocked: ["mild"], sound: false, adultAck: true, custom: { mild: [] }, stats: { wins: 3, best: 200, rounds: 5 } }));
 const document = {
   documentElement: root,
   body: root.querySelector("body") || new El("body"),
@@ -272,6 +273,13 @@ const check = (name, fn) => {
   try { const msg = fn(); results.push([true, name, msg || ""]); }
   catch (e) { results.push([false, name, e.message]); }
 };
+/* 有两条用例要走完 700 张牌（几分钟）。日常回归用 SKIP_SLOW=1 跳过，
+   定稿前再跑全量。 */
+const SKIP_SLOW = !!process.env.SKIP_SLOW;
+const slow = (name, fn) => {
+  if (SKIP_SLOW) { results.push([true, name, "（SKIP_SLOW 已跳过）"]); return; }
+  check(name, fn);
+};
 const currentView = () => ($$(".view").find(v => v.classList.contains("is-active")) || {}).dataset?.view;
 const b_cls = el => el.className;
 
@@ -315,12 +323,15 @@ if (!hb) {
     if (seen.size < 2) throw new Error("never rotated: " + [...seen]);
     return [...seen].join(" / ");
   });
-  check("points accrue on draw", () => {
-    const before = hb.state.points;
+  check("drawing a card no longer scores points", () => {
+    /* 心跳值解锁已移除：抽卡不该再产生任何分数状态 */
     $("#btnNext").click(); runTimers(8);
     $("#btnNext").click(); runTimers(8);
-    if (hb.state.points <= before) throw new Error("no growth (" + before + " -> " + hb.state.points + ")");
-    return before + " -> " + hb.state.points;
+    if ("points" in hb.state) throw new Error("state still carries points: " + hb.state.points);
+    if ("unlocked" in hb.state) throw new Error("state still carries unlocked");
+    const info = $("#deckInfo").textContent;
+    if (info.indexOf("心跳值") >= 0) throw new Error("deck info still mentions 心跳值: " + info);
+    return info;
   });
   check("wheel spin resolves a segment", () => {
     hb.go("wheel");
@@ -379,17 +390,34 @@ if (!hb) {
     if ($("#bankList").textContent.indexOf("测试题") < 0) throw new Error("bank not re-rendered");
     return "ok";
   });
-  check("locked tier renders the unlock price", () => {
-    hb.set({ points: 0, unlocked: ["mild", "spicy"], intensity: "mild" });
+  check("no tier is paywalled", () => {
+    hb.set({ intensity: "mild", adultAck: false });
     hb.go("setup");
-    const ex = $$("#intensityList .mode").find(b => b.dataset.tier === "edge");
-    if (!ex) throw new Error("edge row missing");
-    if (!ex.classList.contains("is-locked")) throw new Error("row not marked locked");
-    if (ex.textContent.indexOf("200") < 0) throw new Error("price not shown: " + ex.textContent);
-    return ex.textContent.replace(/\s+/g, " ").trim().slice(0, 46);
+    const rows = $$("#intensityList .mode");
+    if (rows.length !== 7) throw new Error("rows = " + rows.length);
+    rows.forEach(r => {
+      if (r.textContent.indexOf("心跳值") >= 0) throw new Error(r.dataset.tier + " still shows a price: " + r.textContent);
+      if (r.textContent.indexOf("♥") >= 0) throw new Error(r.dataset.tier + " still shows a ♥ cost");
+      /* 只有 18+ 档允许被挡（因为还没确认成年） */
+      const shouldBeLocked = r.dataset.tier === "forbidden";
+      if (r.classList.contains("is-locked") !== shouldBeLocked) {
+        throw new Error(r.dataset.tier + " locked=" + r.classList.contains("is-locked") + ", expected " + shouldBeLocked);
+      }
+    });
+    return "7 档全部开放，仅 18+ 待确认年龄";
+  });
+  check("every tier is selectable without points", () => {
+    const tiers = ["fierce", "burning", "edge", "extreme"];
+    hb.set({ intensity: "mild" });
+    hb.go("setup");
+    for (const t of tiers) {
+      $$("#intensityList .mode").find(b => b.dataset.tier === t).click();
+      if (hb.state.intensity !== t) throw new Error("could not switch to " + t);
+    }
+    return "mild → " + tiers.join(" → ");
   });
   check("mode drawer reflects the active tier", () => {
-    hb.set({ points: 300, unlocked: ["mild", "spicy", "fierce", "burning", "edge", "extreme", "forbidden"], intensity: "fierce" });
+    hb.set({ intensity: "fierce" });
     hb.go("truth");
     $("#btnTruthMode").click();                 /* open the drawer */
     if ($("#drawer").hidden) throw new Error("drawer did not open");
@@ -418,7 +446,7 @@ if (!hb) {
     if (hb.state.intensity !== "mild") throw new Error("tier applied before confirmation");
     return "dialog shown, tier not applied yet";
   });
-  check("question bank is complete and duplicate-free", () => {
+  slow("question bank is complete and duplicate-free", () => {
     /* built-in prompts are 20 truths + 20 dares per tier; custom ones add on top */
     const customTexts = new Set();
     for (const tier of ["mild", "spicy", "fierce", "burning", "edge", "extreme", "forbidden"]) {
@@ -447,7 +475,7 @@ if (!hb) {
     if (total !== 700) throw new Error("distinct built-in prompts = " + total + " (expected 700)");
     return `7 tiers × 100 cards = ${total} distinct built-in prompts`;
   });
-  check("no card hands control back to the partner", () => {
+  slow("no card hands control back to the partner", () => {
     /* 实测：双方脑子都空的时候，「由对方决定」这类卡会直接卡住，一律禁用 */
     const BANNED = [/由对方/, /对方指定/, /对方宣布/, /对方决定/, /由他\/她决定/, /对方提要求/];
     const offenders = [];
@@ -471,22 +499,12 @@ if (!hb) {
     if (arts.length < 5) throw new Error("only " + arts.length + " blocks");
     return arts.length + " blocks";
   });
-  check("locked tier is blocked without points", () => {
-    hb.set({ points: 0, unlocked: ["mild", "spicy"], intensity: "mild" });
-    hb.go("setup");
-    const locked = $$("#intensityList .mode").find(b => b.dataset.tier === "burning");
-    if (!locked) throw new Error("burning row missing");
-    locked.click();
-    if (hb.state.intensity !== "mild") throw new Error("locked tier became active");
-    return "blocked, intensity still " + hb.state.intensity;
-  });
-  check("unlocking spends points and activates", () => {
-    hb.set({ points: 200 });
-    hb.go("setup");
-    $$("#intensityList .mode").find(b => b.dataset.tier === "edge").click();
-    if (hb.state.intensity !== "edge") throw new Error("did not activate");
-    if (hb.state.points !== 0) throw new Error("points = " + hb.state.points);
-    return "unlocked edge, points 200 -> " + hb.state.points;
+  check("persisted state carries no points/unlocked keys", () => {
+    const raw = store.get("heartbeat-duo.v1");
+    const parsed = JSON.parse(raw);
+    if ("points" in parsed) throw new Error("points leaked into storage");
+    if ("unlocked" in parsed) throw new Error("unlocked leaked into storage");
+    return Object.keys(parsed).join(",");
   });
   check("localStorage round-trip", () => {
     const raw = store.get("heartbeat-duo.v1");
