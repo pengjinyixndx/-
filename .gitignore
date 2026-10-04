@@ -1,0 +1,25 @@
+# 依赖与构建产物
+node_modules/
+dist/
+build/
+.cache/
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# 运行时产生的临时文件
+*.log
+*.tmp
+*.bak
+*.orig
+
+# 逆向取证产生的中间产物（几十 MB 的原始内存 dump，可随时重跑脚本再生）
+analysis/memdump/
+analysis/_shot/
+analysis/__pycache__/
+*.pyc

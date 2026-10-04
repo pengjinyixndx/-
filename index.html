@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#2b0812" />
+<title>心跳副本 · HEARTBEAT DUO</title>
+<link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <!-- ambient background -->
+  <canvas id="fx" aria-hidden="true"></canvas>
+  <div class="bg-glow" aria-hidden="true"></div>
+  <div class="bg-grain" aria-hidden="true"></div>
+
+  <!-- chrome -->
+  <header class="chrome" id="chrome">
+    <button class="chrome__btn" id="btnHome" title="回到主页" aria-label="回到主页">
+      <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path d="M12 3.2 3 10.6V21h6.2v-6.4h5.6V21H21V10.6z" fill="currentColor"/></svg>
+    </button>
+    <div class="chrome__title">
+      <span class="chrome__brand">心跳副本</span>
+      <span class="chrome__sub" id="chromeSub">HEARTBEAT DUO</span>
+    </div>
+    <div class="chrome__meta">
+      <span class="pulse" aria-hidden="true"><i></i></span>
+      <span id="chipIntensity">未选择</span>
+      <button class="chrome__btn chrome__btn--sound" id="btnSound" title="心跳音效" aria-label="切换心跳音效">
+        <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M4 9v6h3.6L13 19V5L7.6 9z" fill="currentColor"/><path d="M16.4 8.6a4.6 4.6 0 0 1 0 6.8M18.6 6a7.8 7.8 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <main id="stage">
+
+    <!-- ══════════════ HOME ══════════════ -->
+    <section class="view is-active" id="view-home" data-view="home">
+      <div class="hero">
+        <p class="hero__kicker">COUPLE GAME · 双人模式</p>
+        <h1 class="hero__title"><span>心跳</span><em>副本</em></h1>
+        <p class="hero__lede">一款为两个人做的真心话大冒险。<br>把两个人的名字写进来，剩下的交给骰子。</p>
+      </div>
+
+      <div class="tiles" id="homeTiles">
+        <button class="tile tile--wide tile--heart" data-go="truth">
+          <span class="tile__icon">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 28S3.6 20.2 3.6 11.9A6.9 6.9 0 0 1 16 7.6a6.9 6.9 0 0 1 12.4 4.3C28.4 20.2 16 28 16 28z" fill="currentColor"/></svg>
+          </span>
+          <span class="tile__text"><b>真心话大冒险</b><i>温和 · 热辣 · 猛烈 · 极限</i></span>
+          <span class="tile__arrow">→</span>
+        </button>
+
+        <button class="tile" data-go="wheel">
+          <span class="tile__icon">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="16" r="12.4" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M16 3.6v24.8M3.6 16h24.8M7.2 7.2l17.6 17.6M24.8 7.2 7.2 24.8" stroke="currentColor" stroke-width="2.4"/></svg>
+          </span>
+          <span class="tile__text"><b>大转盘</b><i>初级 / 高级</i></span>
+          <span class="tile__arrow">→</span>
+        </button>
+
+        <button class="tile" data-go="dice">
+          <span class="tile__icon">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="4.5" y="4.5" width="23" height="23" rx="6" fill="none" stroke="currentColor" stroke-width="2.4"/><circle cx="11" cy="11" r="2.1" fill="currentColor"/><circle cx="21" cy="11" r="2.1" fill="currentColor"/><circle cx="16" cy="16" r="2.1" fill="currentColor"/><circle cx="11" cy="21" r="2.1" fill="currentColor"/><circle cx="21" cy="21" r="2.1" fill="currentColor"/></svg>
+          </span>
+          <span class="tile__text"><b>骰子</b><i>初级 / 高级</i></span>
+          <span class="tile__arrow">→</span>
+        </button>
+
+        <button class="tile" data-go="traffic">
+          <span class="tile__icon">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><rect x="9" y="3.4" width="14" height="25.2" rx="5" fill="none" stroke="currentColor" stroke-width="2.2"/><circle cx="16" cy="10" r="2.6" fill="currentColor"/><circle cx="16" cy="16.6" r="2.6" fill="currentColor" opacity=".55"/><circle cx="16" cy="23.2" r="2.6" fill="currentColor" opacity=".35"/></svg>
+          </span>
+          <span class="tile__text"><b>红绿灯</b><i>反应力对决</i></span>
+          <span class="tile__arrow">→</span>
+        </button>
+      </div>
+
+      <nav class="home-foot">
+        <button class="linkbtn" data-go="custom">自定义题库</button>
+        <span class="dot" aria-hidden="true"></span>
+        <button class="linkbtn" data-go="rules">玩法说明</button>
+      </nav>
+    </section>
+
+    <!-- ══════════════ SETUP ══════════════ -->
+    <section class="view" id="view-setup" data-view="setup">
+      <div class="sheet">
+        <div class="sheet__bar">
+          <button class="back" data-back aria-label="返回">←</button>
+          <h2 class="sheet__h">角色名称</h2>
+        </div>
+        <label class="field">
+          <span class="field__icon">
+            <svg viewBox="0 0 32 32" aria-hidden="true"><circle cx="12" cy="11" r="5" fill="currentColor"/><circle cx="22" cy="12.4" r="4" fill="currentColor" opacity=".8"/><path d="M2.6 27c.6-5.2 4.7-8.2 9.4-8.2s8.8 3 9.4 8.2z" fill="currentColor"/><path d="M20.4 18.9c3.6.2 6.6 2.7 7.2 8.1h-5.1c-.3-3.2-1.4-5.8-3-7.5z" fill="currentColor" opacity=".8"/></svg>
+          </span>
+          <input id="namesInput" type="text" inputmode="text" placeholder="写下你们的名字，用 空格 或 & 分隔" autocomplete="off" />
+        </label>
+        <p class="hint">例：<code>阿泽 &amp; 小满</code> —— 只写一个名字也可以开局。</p>
+
+        <div class="names-preview" id="namesPreview"></div>
+
+        <div class="modes" id="intensityList"><!-- injected --></div>
+
+        <div class="sheet__cta">
+          <button class="btn btn--primary" data-go="truth">
+            <span>进入副本</span>
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><path d="M5 12h12.5M12.6 6.2 18.4 12l-5.8 5.8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <p class="hint hint--center" id="pointsHint"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ══════════════ TRUTH OR DARE ══════════════ -->
+    <section class="view" id="view-truth" data-view="truth">
+      <div class="truth-top">
+        <button class="pill" id="btnTruthMode" title="切换模式">
+          <span class="pill__dot"></span><span id="truthModeName">温和</span><i>▾</i>
+        </button>
+        <button class="pill pill--custom" id="btnCustomEdit">编辑题库</button>
+      </div>
+
+      <div class="deckwrap">
+        <div class="deck-shadow" aria-hidden="true"></div>
+        <div class="card" id="card">
+          <div class="card__face">
+            <div class="card__head">
+              <span class="card__kind" id="cardKind">真心话</span>
+              <span class="card__idx" id="cardIdx">#001</span>
+            </div>
+            <div class="card__who" id="cardWho"></div>
+            <p class="card__text" id="cardText">准备好之后，点下面的按钮开始。</p>
+            <div class="card__foot">
+              <span id="cardMeta">温和 · 真心话</span>
+              <span class="card__pulse" aria-hidden="true"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="truth-actions">
+        <button class="choice choice--truth" data-pick="truth">
+          <span class="choice__k">真心话</span><span class="choice__e">TRUTH</span>
+        </button>
+        <button class="choice choice--dare" data-pick="dare">
+          <span class="choice__k">大冒险</span><span class="choice__e">DARE</span>
+        </button>
+      </div>
+      <div class="truth-actions truth-actions--next">
+        <button class="btn btn--ghost" id="btnNext">再来一张</button>
+        <button class="btn btn--ghost" id="btnShuffle">洗牌</button>
+      </div>
+      <p class="hint hint--center" id="deckInfo"></p>
+    </section>
+
+    <!-- ══════════════ WHEEL ══════════════ -->
+    <section class="view" id="view-wheel" data-view="wheel">
+      <div class="sheet__bar sheet__bar--solo">
+        <button class="back" data-back aria-label="返回">←</button>
+        <h2 class="sheet__h">大转盘</h2>
+      </div>
+      <div class="seg" id="wheelTier">
+        <button class="seg__i is-on" data-tier="junior">初级</button>
+        <button class="seg__i" data-tier="senior">高级</button>
+      </div>
+      <div class="wheelwrap">
+        <canvas id="wheel" width="720" height="720"></canvas>
+        <button class="wheel-go" id="btnSpin"><span>GO</span></button>
+      </div>
+      <div class="result" id="wheelResult">
+        <span class="result__k">指针停在</span>
+        <strong class="result__v" id="wheelValue">—</strong>
+      </div>
+      <p class="hint hint--center" id="wheelInfo"></p>
+    </section>
+
+    <!-- ══════════════ DICE ══════════════ -->
+    <section class="view" id="view-dice" data-view="dice">
+      <div class="sheet__bar sheet__bar--solo">
+        <button class="back" data-back aria-label="返回">←</button>
+        <h2 class="sheet__h">骰子</h2>
+      </div>
+      <div class="seg" id="diceTier">
+        <button class="seg__i is-on" data-tier="junior">初级</button>
+        <button class="seg__i" data-tier="senior">高级</button>
+      </div>
+      <div class="dicewrap">
+        <div class="die-scene">
+          <div class="die" id="die" data-face="1">
+            <span class="die__face" data-f="1"></span><span class="die__face" data-f="2"></span>
+            <span class="die__face" data-f="3"></span><span class="die__face" data-f="4"></span>
+            <span class="die__face" data-f="5"></span><span class="die__face" data-f="6"></span>
+          </div>
+        </div>
+        <div class="dice-readout" id="diceReadout">
+          <span class="dice-num" id="dieNum">—</span>
+          <span class="dice-text" id="dieText">点 GO 掷骰子</span>
+        </div>
+      </div>
+      <button class="btn btn--primary btn--wide" id="btnRoll"><span>GO · 掷骰子</span></button>
+      <p class="hint hint--center" id="diceInfo"></p>
+    </section>
+
+    <!-- ══════════════ TRAFFIC LIGHT ══════════════ -->
+    <section class="view" id="view-traffic" data-view="traffic">
+      <div class="sheet__bar sheet__bar--solo">
+        <button class="back" data-back aria-label="返回">←</button>
+        <h2 class="sheet__h">红绿灯</h2>
+      </div>
+      <div class="seg" id="trafficTier">
+        <button class="seg__i is-on" data-tier="junior">初级 · 0.6s 窗口</button>
+        <button class="seg__i" data-tier="senior">高级 · 0.3s 窗口</button>
+      </div>
+
+      <div class="lightbox" id="lightbox" data-light="idle">
+        <span class="lamp lamp--red"></span>
+        <span class="lamp lamp--yellow"></span>
+        <span class="lamp lamp--green"></span>
+        <div class="lightbox__label" id="lightLabel">点击下方按钮开始</div>
+      </div>
+
+      <button class="tapper" id="btnTap"><span id="tapLabel">开始</span></button>
+
+      <div class="stats" id="trafficStats"></div>
+      <p class="hint hint--center">红灯亮起时先别动。灯一变成 <b>绿</b>，立刻点。抢跑或超时都算输。</p>
+    </section>
+
+    <!-- ══════════════ RULES ══════════════ -->
+    <section class="view" id="view-rules" data-view="rules">
+      <div class="sheet__bar sheet__bar--solo">
+        <button class="back" data-back aria-label="返回">←</button>
+        <h2 class="sheet__h">玩法说明</h2>
+      </div>
+      <div class="rules">
+        <article>
+          <h3><span>01</span>先写名字</h3>
+          <p>在「角色名称」里写下你们的名字，用空格或 <code>&amp;</code> 分开。名字会出现在每一张卡片上，决定这一轮轮到谁。</p>
+        </article>
+        <article>
+          <h3><span>02</span>五档强度</h3>
+          <p>一条递进的曲线，玩到哪一档由你们决定：<b>温和</b>破冰、零身体接触；<b>热辣</b>脸红和交心一次到位；<b>猛烈</b>从这一档开始就是<b>大幅度的肢体接触</b>；<b>极限</b>进入全身接触与强烈压制；<b>禁区</b>是 18+，第一次进入会先请你们确认双方成年。</p>
+          <p>内置 <b>500 道题</b>，每档 50 条真心话 + 50 条大冒险，<b>每一道都占一个不同的角度</b>——不靠换词凑数。同一档内洗牌，走完一遍才会重复。</p>
+          <p>所有卡片都<b>不把决定权推回给对方</b>（没有「由对方决定」这类）——真到了那个时候，两个人脑子都是空的，那种卡只会卡住。</p>
+        </article>
+        <article>
+          <h3><span>03</span>心跳值怎么来</h3>
+          <p>每抽一张卡 +2，红绿灯获胜 +8（高级 +16）。攒够了就在模式列表里解锁下一档：猛烈 80、极限 160。最后的<b>禁区</b>不花钱，只需确认双方成年。</p>
+        </article>
+        <article>
+          <h3><span>04</span>大转盘 &amp; 骰子</h3>
+          <p>转盘和骰子用来决定「谁来做」「做什么」「做几次」，适合已经不想讲道理的时候。</p>
+        </article>
+        <article>
+          <h3><span>05</span>红绿灯</h3>
+          <p>单人反应力对决。红灯亮着的时候忍住，绿光亮起的瞬间点下去，看谁的手更快。</p>
+        </article>
+        <article>
+          <h3><span>06</span>自定义题库</h3>
+          <p>内置题目不够狠？在「自定义题库」里自己写，写进去的题会混进对应强度的牌堆里。输入框支持<b>一次贴多行</b>，每行算一条。</p>
+        </article>
+        <article class="rules__note">
+          <h3><span>※</span>关于这个网页</h3>
+          <p>这是微信小程序《心跳副本》的静态网页复刻版，纯前端、零依赖，所有数据只存在你自己的浏览器里。</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ══════════════ CUSTOM BANK ══════════════ -->
+    <section class="view" id="view-custom" data-view="custom">
+      <div class="sheet__bar sheet__bar--solo">
+        <button class="back" data-back aria-label="返回">←</button>
+        <h2 class="sheet__h">自定义题库</h2>
+      </div>
+
+      <div class="editor">
+        <div class="editor__row">
+          <div class="seg seg--sm" id="customKind">
+            <button class="seg__i is-on" data-kind="truth">真心话</button>
+            <button class="seg__i" data-kind="dare">大冒险</button>
+          </div>
+          <div class="seg seg--sm" id="customTier">
+            <button class="seg__i" data-tier="mild">温和</button>
+            <button class="seg__i" data-tier="spicy">热辣</button>
+            <button class="seg__i" data-tier="fierce">猛烈</button>
+            <button class="seg__i is-on" data-tier="extreme">极限</button>
+          </div>
+        </div>
+        <textarea id="customText" rows="3" placeholder="写一道你自己的题目……"></textarea>
+        <button class="btn btn--primary btn--wide" id="btnAddCustom"><span>加入题库</span></button>
+      </div>
+
+      <div class="bank" id="bankList"></div>
+    </section>
+
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- in-app confirm (window.confirm is unreliable inside embedded WebViews) -->
+  <div class="ask" id="ask" hidden role="dialog" aria-modal="true" aria-labelledby="askTitle">
+    <div class="ask__scrim" data-ask-close></div>
+    <div class="ask__panel">
+      <h3 class="ask__title" id="askTitle">确认</h3>
+      <div class="ask__body" id="askBody"></div>
+      <div class="ask__row">
+        <button class="btn btn--ghost ask__cancel" id="askCancel">取消</button>
+        <button class="btn btn--primary ask__ok" id="askOk">确认</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- mode sheet (drawer) -->
+  <div class="drawer" id="drawer" hidden>
+    <div class="drawer__scrim" data-close></div>
+    <aside class="drawer__panel" role="dialog" aria-modal="true" aria-label="选择玩法强度">
+      <div class="drawer__top">
+        <div class="drawer__brand"><span class="heartmark"></span>角色名称</div>
+        <button class="drawer__close" data-close aria-label="关闭">✕</button>
+      </div>
+      <div class="drawer__names" id="drawerNames"></div>
+      <div class="drawer__body" id="drawerBody"></div>
+    </aside>
+  </div>
+
+  <script src="assets/questions.js"></script>
+  <script src="assets/app.js"></script>
+</body>
+</html>
