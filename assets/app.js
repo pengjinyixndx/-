@@ -51,12 +51,14 @@ function load() {
 function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 
 /* ───────────────────────── tiers ─────────────────────────
-   五档递进：破冰 → 脸红 → 交心 → 强烈接触 → 18+            */
+   七档递进：破冰 → 脸红 → 大幅动作 → 加强力度 → 隔衣敏感 → 脱衣触碰 → 18+  */
 const TIERS = [
   { id: "mild",    name: "温和", latin: "MILD",    cost: 0,   adult: false, desc: "破冰。零身体接触，只会让你笑和松下来。" },
   { id: "spicy",   name: "热辣", latin: "SPICY",   cost: 0,   adult: false, desc: "脸红 + 交心一次到位：偏好、坦白、猜心事。" },
-  { id: "fierce",  name: "猛烈", latin: "FIERCE",  cost: 80,  adult: false, desc: "最难的真心话，藏最久的那几句。" },
-  { id: "extreme", name: "极限", latin: "EXTREME", cost: 160, adult: false, desc: "强烈肢体接触。上了这一档就别端着。" },
+  { id: "fierce",  name: "猛烈", latin: "FIERCE",  cost: 60,  adult: false, desc: "大幅肢体动作：拉、抱、按、压、跨坐。衣物开始离开。" },
+  { id: "burning", name: "灼热", latin: "BURNING", cost: 120, adult: false, desc: "力度与压制拉满，贴身摩擦。仍不碰敏感部位。" },
+  { id: "edge",    name: "临界", latin: "EDGE",    cost: 200, adult: false, desc: "隔着衣物接触胸、大腿内侧、臀。还不脱。" },
+  { id: "extreme", name: "极限", latin: "EXTREME", cost: 300, adult: false, desc: "衣物离开，直接触碰，全身接触。" },
   { id: "forbidden", name: "禁区", latin: "18+",   cost: 0,   adult: true,  desc: "18+。只想玩到这里的两个人再进来。" }
 ];
 const tierOf = id => TIERS.find(t => t.id === id) || TIERS[0];
@@ -66,8 +68,10 @@ const HEARTS = {
   mild:    '<path d="M16 27.4S4.6 20.2 4.6 12.4A6.6 6.6 0 0 1 16 8.4a6.6 6.6 0 0 1 11.4 4C27.4 20.2 16 27.4 16 27.4z" fill="currentColor"/>',
   spicy:   '<path d="M16 27.9S4.2 20.4 4.2 12.2A6.9 6.9 0 0 1 16 7.8a6.9 6.9 0 0 1 11.8 4.4C27.8 20.4 16 27.9 16 27.9z" fill="currentColor"/><path d="M16 7.8 12.4 2.6 16 4l3.6-1.4z" fill="currentColor" opacity=".85"/>',
   fierce:  '<path d="M16 28.2S3.8 20.6 3.8 12A7.2 7.2 0 0 1 16 7.3 7.2 7.2 0 0 1 28.2 12c0 8.6-12.2 16.2-12.2 16.2z" fill="currentColor"/><path d="M6.4 9.6 3 5.4l4.2.4zM25.6 9.6 29 5.4l-4.2.4z" fill="currentColor"/>',
-  extreme: '<path d="M16 29S3.2 21 3.2 11.6A7.4 7.4 0 0 1 16 6.8a7.4 7.4 0 0 1 12.8 4.8C28.8 21 16 29 16 29z" fill="currentColor"/><path d="M2 8.2 7 6l-1 5.2zM30 8.2 25 6l1 5.2zM16 4.6l-2.6-3.4h5.2z" fill="currentColor"/>',
-  forbidden: '<path d="M16 29.6S2.8 21.2 2.8 11.2A7.8 7.8 0 0 1 16 6.4a7.8 7.8 0 0 1 13.2 4.8c0 10-13.2 18.4-13.2 18.4z" fill="currentColor"/><path d="M1 5.6 6.6 3.2 5.4 9zM31 5.6 25.4 3.2 26.6 9zM16 3.6l-3.2-3.6h6.4z" fill="currentColor"/><path d="M12 13.4h8M12 17.6h8M12 21.8h8" stroke="#20040e" stroke-width="1.6" stroke-linecap="round"/>'
+  burning: '<path d="M16 29S3.2 21 3.2 11.6A7.4 7.4 0 0 1 16 6.8a7.4 7.4 0 0 1 12.8 4.8C28.8 21 16 29 16 29z" fill="currentColor"/><path d="M2 8.2 7 6l-1 5.2zM30 8.2 25 6l1 5.2zM16 4.6l-2.6-3.4h5.2z" fill="currentColor"/><path d="M16 12.4c1.6 2 3 3.6 3 5.3a3 3 0 0 1-6 0c0-1.7 1.4-3.3 3-5.3z" fill="#20040e"/>',
+  edge:    '<path d="M16 29.3S2.9 21 2.9 11.3A7.6 7.6 0 0 1 16 6.6a7.6 7.6 0 0 1 13.1 4.7C29.1 21 16 29.3 16 29.3z" fill="currentColor"/><path d="M1.4 6.6 6.8 4l-1.2 5.8zM30.6 6.6 25.2 4l1.2 5.8zM16 4l-3-4h6z" fill="currentColor"/><path d="M16 12.2c1.9 2.3 3.4 4.1 3.4 6a3.4 3.4 0 0 1-6.8 0c0-1.9 1.5-3.7 3.4-6z" fill="#20040e"/><path d="M10.4 22.6c1.7 1.1 3.6 1.7 5.6 1.7s3.9-.6 5.6-1.7" fill="none" stroke="#20040e" stroke-width="1.5" stroke-linecap="round"/>',
+  extreme: '<path d="M16 29.6S2.6 21.2 2.6 11.2A7.8 7.8 0 0 1 16 6.2a7.8 7.8 0 0 1 13.4 5c0 10-13.4 18.4-13.4 18.4z" fill="currentColor"/><path d="M1 5.6 6.6 3.2 5.4 9zM31 5.6 25.4 3.2 26.6 9zM16 3.6l-3.2-3.6h6.4z" fill="currentColor"/><path d="M12 13.4h8M12 17.6h8M12 21.8h8" stroke="#20040e" stroke-width="1.6" stroke-linecap="round"/>',
+  forbidden: '<path d="M16 29.8S2.4 21.3 2.4 11.1A8 8 0 0 1 16 6a8 8 0 0 1 13.6 5.1c0 10.2-13.6 18.7-13.6 18.7z" fill="currentColor"/><path d="M.8 5.2 6.6 2.8 5.2 9zM31.2 5.2 25.4 2.8 26.8 9zM16 3.2 12.6-.6h6.8z" fill="currentColor"/><path d="M11.6 13.2h8.8M11.6 17.4h8.8M11.6 21.6h8.8M14.6 25.4h2.8" stroke="#20040e" stroke-width="1.7" stroke-linecap="round"/>'
 };
 
 /* ───────────────────────── content banks ─────────────────────────

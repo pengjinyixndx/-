@@ -280,14 +280,14 @@ if (!hb) {
 } else {
   check("initial state loads", () => "intensity=" + hb.state.intensity + " names=" + hb.state.names.length);
   check("set names + unlock tiers", () => {
-    hb.set({ names: ["阿泽", "小满"], intensity: "fierce", unlocked: ["mild", "spicy", "fierce", "extreme", "forbidden"], points: 200 });
+    hb.set({ names: ["阿泽", "小满"], intensity: "fierce", unlocked: ["mild", "spicy", "fierce", "burning", "edge", "extreme", "forbidden"], points: 200 });
     if (hb.state.names.length !== 2) throw new Error("names not stored");
     return "ok";
   });
-  check("setup renders 5 intensity rows", () => {
+  check("setup renders 7 intensity rows", () => {
     hb.go("setup");
     const modes = $$("#intensityList .mode");
-    if (modes.length !== 5) throw new Error("expected 5 rows, got " + modes.length);
+    if (modes.length !== 7) throw new Error("expected 7 rows, got " + modes.length);
     return modes.map(x => x.dataset.tier).join(",");
   });
   check("truth view renders a card", () => {
@@ -382,19 +382,19 @@ if (!hb) {
   check("locked tier renders the unlock price", () => {
     hb.set({ points: 0, unlocked: ["mild", "spicy"], intensity: "mild" });
     hb.go("setup");
-    const ex = $$("#intensityList .mode").find(b => b.dataset.tier === "extreme");
-    if (!ex) throw new Error("extreme row missing");
+    const ex = $$("#intensityList .mode").find(b => b.dataset.tier === "edge");
+    if (!ex) throw new Error("edge row missing");
     if (!ex.classList.contains("is-locked")) throw new Error("row not marked locked");
-    if (ex.textContent.indexOf("160") < 0) throw new Error("price not shown: " + ex.textContent);
+    if (ex.textContent.indexOf("200") < 0) throw new Error("price not shown: " + ex.textContent);
     return ex.textContent.replace(/\s+/g, " ").trim().slice(0, 46);
   });
   check("mode drawer reflects the active tier", () => {
-    hb.set({ points: 300, unlocked: ["mild", "spicy", "fierce", "extreme", "forbidden"], intensity: "fierce" });
+    hb.set({ points: 300, unlocked: ["mild", "spicy", "fierce", "burning", "edge", "extreme", "forbidden"], intensity: "fierce" });
     hb.go("truth");
     $("#btnTruthMode").click();                 /* open the drawer */
     if ($("#drawer").hidden) throw new Error("drawer did not open");
     const rows = $$("#drawerBody .dmode");
-    if (rows.length !== 5) throw new Error("drawer rows = " + rows.length);
+    if (rows.length !== 7) throw new Error("drawer rows = " + rows.length);
     const active = rows.filter(r => r.classList.contains("is-on"));
     if (active.length !== 1 || active[0].dataset.tier !== "fierce") throw new Error("active row wrong");
     rows.find(r => r.dataset.tier === "spicy").click();   /* switch tier from the drawer */
@@ -421,12 +421,12 @@ if (!hb) {
   check("question bank is complete and duplicate-free", () => {
     /* built-in prompts are 20 truths + 20 dares per tier; custom ones add on top */
     const customTexts = new Set();
-    for (const tier of ["mild", "spicy", "fierce", "extreme", "forbidden"]) {
+    for (const tier of ["mild", "spicy", "fierce", "burning", "edge", "extreme", "forbidden"]) {
       (hb.state.custom[tier] || []).forEach(c => customTexts.add(c.text));
     }
     let total = 0;
     const seen = new Set();
-    for (const tier of ["mild", "spicy", "fierce", "extreme", "forbidden"]) {
+    for (const tier of ["mild", "spicy", "fierce", "burning", "edge", "extreme", "forbidden"]) {
       const customCount = (hb.state.custom[tier] || []).length;
       hb.set({ intensity: tier });
       hb.go("truth");
@@ -444,14 +444,14 @@ if (!hb) {
         total++;
       }
     }
-    if (total !== 500) throw new Error("distinct built-in prompts = " + total + " (expected 500)");
-    return `5 tiers × 100 cards = ${total} distinct built-in prompts`;
+    if (total !== 700) throw new Error("distinct built-in prompts = " + total + " (expected 700)");
+    return `7 tiers × 100 cards = ${total} distinct built-in prompts`;
   });
   check("no card hands control back to the partner", () => {
     /* 实测：双方脑子都空的时候，「由对方决定」这类卡会直接卡住，一律禁用 */
     const BANNED = [/由对方/, /对方指定/, /对方宣布/, /对方决定/, /由他\/她决定/, /对方提要求/];
     const offenders = [];
-    for (const tier of ["mild", "spicy", "fierce", "extreme", "forbidden"]) {
+    for (const tier of ["mild", "spicy", "fierce", "burning", "edge", "extreme", "forbidden"]) {
       hb.set({ intensity: tier });
       hb.go("truth");
       const deckSize = Number(($("#deckInfo").textContent.match(/牌堆 (\d+) 张/) || [])[1]);
@@ -463,7 +463,7 @@ if (!hb) {
       }
     }
     if (offenders.length) throw new Error(offenders.length + " card(s): " + offenders[0]);
-    return "0 offenders across all 500 cards";
+    return "0 offenders across all 700 cards";
   });
   check("rules page has content", () => {
     hb.go("rules");
@@ -474,8 +474,8 @@ if (!hb) {
   check("locked tier is blocked without points", () => {
     hb.set({ points: 0, unlocked: ["mild", "spicy"], intensity: "mild" });
     hb.go("setup");
-    const locked = $$("#intensityList .mode").find(b => b.dataset.tier === "extreme");
-    if (!locked) throw new Error("extreme row missing");
+    const locked = $$("#intensityList .mode").find(b => b.dataset.tier === "burning");
+    if (!locked) throw new Error("burning row missing");
     locked.click();
     if (hb.state.intensity !== "mild") throw new Error("locked tier became active");
     return "blocked, intensity still " + hb.state.intensity;
@@ -483,10 +483,10 @@ if (!hb) {
   check("unlocking spends points and activates", () => {
     hb.set({ points: 200 });
     hb.go("setup");
-    $$("#intensityList .mode").find(b => b.dataset.tier === "extreme").click();
-    if (hb.state.intensity !== "extreme") throw new Error("did not activate");
-    if (hb.state.points !== 40) throw new Error("points = " + hb.state.points);
-    return "unlocked, points 200 -> " + hb.state.points;
+    $$("#intensityList .mode").find(b => b.dataset.tier === "edge").click();
+    if (hb.state.intensity !== "edge") throw new Error("did not activate");
+    if (hb.state.points !== 0) throw new Error("points = " + hb.state.points);
+    return "unlocked edge, points 200 -> " + hb.state.points;
   });
   check("localStorage round-trip", () => {
     const raw = store.get("heartbeat-duo.v1");
