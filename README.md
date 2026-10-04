@@ -149,6 +149,18 @@ SKIP_SLOW=1 node analysis/dom-smoke.mjs .   # 日常回归：跳过两条遍历�
 
 ---
 
+## 提交即推送
+
+仓库里装了 `post-commit` 钩子（`analysis/git-hooks/post-commit`，随仓库版本化，
+由 `core.hooksPath` 启用）：**每次 `git commit` 成功后会自动 `git push`**，
+所以终端里看到推送信息是正常的。
+
+- 分支还没有上游时只打印提示，不会硬推
+- 推送失败（断网 / 认证 / 冲突）不会影响提交，改动仍在本地，重试 `git push` 即可
+- 想关掉：`git config --unset core.hooksPath`
+
+---
+
 ## 已知限制
 
 - ⚠️ **视觉未经浏览器实机验证**。开发沙箱禁止 Chromium 的命名管道 IPC，
